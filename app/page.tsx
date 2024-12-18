@@ -2,8 +2,6 @@ import AuthButton from "@/components/AuthButton";
 import SearchBar from "@/components/SearchBar";
 import StocksTable from "@/components/StocksTable";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Loader } from "lucide-react";
-import { Suspense } from "react";
 
 export default async function Home() {
   return (
@@ -23,7 +21,6 @@ export default async function Home() {
         <div className="flex-grow">
             <SearchBar />
           </div>
-        <Suspense fallback={<Loader className="animate-spin" />}></Suspense>
         <StocksTable />
       </div>
     </div>
