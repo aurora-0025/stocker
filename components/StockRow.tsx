@@ -3,14 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { TableCell, TableRow } from "./ui/table";
 import StockDate from "./StockDate";
-import { Loader } from "lucide-react";
+import { Loader, RefreshCw } from "lucide-react"; // Import the refresh icon
 import { StockChart } from "./StockChart";
 
 type StockRowProps = {
   symbol: string;
   duration: string;
-  period1: Date;
-  period2: Date;
 };
 
 type Quote = {
@@ -38,46 +36,89 @@ export const getInterval = (duration: string) => {
   }
 };
 
-const StockRow = ({ symbol, duration, period1, period2 }: StockRowProps) => {
+const StockRow = ({ symbol, duration }: StockRowProps) => {
   const [loading, setLoading] = useState(false);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [profitLossPercentages, setProfitLossPercentages] = useState<
-    { date: string; profitLoss: string, closePrice: number }[]
+    { date: string; profitLoss: string; closePrice: number }[]
   >([]);
 
+  const calculatePeriod1 = (duration: string) => {
+    const now = new Date();
+    switch (duration) {
+      case "1d":
+        now.setDate(now.getDate() - 1);
+        break;
+      case "3d":
+        now.setDate(now.getDate() - 3);
+        break;
+      case "1w":
+        now.setDate(now.getDate() - 7);
+        break;
+      case "1mo":
+        now.setMonth(now.getMonth() - 1);
+        now.setDate(1);
+        break;
+      case "3mo":
+        now.setMonth(now.getMonth() - 3);
+        console.log("3mo");
+        now.setDate(1);
+        break;
+      case "1y":
+        now.setFullYear(now.getFullYear() - 1);
+        now.setMonth(1);
+        now.setDate(1);
+        break;
+      case "3y":
+        now.setFullYear(now.getFullYear() - 3);
+        now.setMonth(1);
+        now.setDate(1);
+        break;
+      case "5y":
+        now.setFullYear(now.getFullYear() - 5);
+        now.setMonth(1);
+        now.setDate(1);
+        break;
+      default:
+        now.setMonth(now.getMonth() - 1);
+    }
+    return now;
+  };
+
+  const fetchHistoricalQuotes = async () => {
+    setLoading(true);
+    try {
+      const interval = getInterval(duration);
+      const p2 = new Date();
+      const p1 = calculatePeriod1(duration);
+      p1.setHours(0, 0, 0, 0);
+      console.log(p1);
+      const response = await fetch(
+        `/api/chart?symbol=${symbol}&period1=${p1}&period2=${p2}&interval=${interval}`
+      );
+
+      const data = await response.json();
+      console.log(data);
+
+      const formattedQuotes = data.quotes.map(
+        (q: { date: Date; close: number }) => ({
+          date: q.date,
+          close: q.close,
+        })
+      );
+      setQuotes(formattedQuotes);
+    } catch (error) {
+      console.error("Failed to fetch historical quotes:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    console.log("durationChanged for" + symbol + "to " + duration);
-
-    const fetchHistoricalQuotes = async () => {
-      console.log(period1);
-      console.log(period2);
-      setLoading(true);
-      try {
-        const interval = getInterval(duration);
-        const response = await fetch(
-          `/api/chart?symbol=${symbol}&period1=${period1}&period2=${period2}&interval=${interval}`
-        );
-
-        const data = await response.json();
-        console.log(data);
-
-        const formattedQuotes = data.quotes.map(
-          (q: { date: Date; close: number }) => ({
-            date: q.date,
-            close: q.close,
-          })
-        );
-        setQuotes(formattedQuotes);
-      } catch (error) {
-        console.error("Failed to fetch historical quotes:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchHistoricalQuotes();
-  }, [symbol, duration, period1, period2]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [duration]);
 
   useEffect(() => {
     const fetchCurrentPrice = async () => {
@@ -104,7 +145,7 @@ const StockRow = ({ symbol, duration, period1, period2 }: StockRowProps) => {
       return {
         date: quote.date,
         profitLoss: profitLoss.toFixed(2),
-        closePrice: quote.close
+        closePrice: quote.close,
       };
     });
 
@@ -112,15 +153,32 @@ const StockRow = ({ symbol, duration, period1, period2 }: StockRowProps) => {
   }, [currentPrice, quotes]);
 
   return (
-    <TableRow>
+    <TableRow className="h-[80px]">
       {loading ? (
-        <Loader className="animate-spin" />
+        <TableCell colSpan={5} className="h-[76.8px]">
+          <Loader className="animate-spin" />
+        </TableCell>
       ) : (
         <>
-          <TableCell>{symbol}</TableCell>
-          <TableCell><StockChart loading={loading} data={profitLossPercentages}/></TableCell>
           <TableCell>
-            {currentPrice !== null ? "₹"+currentPrice.toFixed(2) : <Loader className="animate-spin" />}
+            <button
+              onClick={fetchHistoricalQuotes}
+              title="Refresh Data"
+              className="hover:text-blue-500 transition"
+            >
+              <RefreshCw className="w-5 h-5" />
+            </button>
+          </TableCell>
+          <TableCell>{symbol}</TableCell>
+          <TableCell>
+            <StockChart loading={loading} data={profitLossPercentages} />
+          </TableCell>
+          <TableCell>
+            {currentPrice !== null ? (
+              "₹" + currentPrice.toFixed(2)
+            ) : (
+              <Loader className="animate-spin" />
+            )}
           </TableCell>
           {profitLossPercentages.map((entry) => (
             <TableCell key={entry.date}>
@@ -130,7 +188,22 @@ const StockRow = ({ symbol, duration, period1, period2 }: StockRowProps) => {
                   duration={duration}
                 ></StockDate>
               </div>
-              <div><span className="font-bold">₹{entry.closePrice.toFixed(2)}</span>{" ("}<span className={Number(entry.profitLoss) >= 0 ? "text-green-600" : "text-red-600"}>{entry.profitLoss}%</span>{")"}</div>
+              <div>
+                <span className="font-bold">
+                  ₹{entry.closePrice?.toFixed(2) ?? "N/A"}
+                </span>{" "}
+                (
+                <span
+                  className={
+                    Number(entry.profitLoss) >= 0
+                      ? "text-green-600"
+                      : "text-red-600"
+                  }
+                >
+                  {entry.profitLoss}%
+                </span>
+                )
+              </div>
             </TableCell>
           ))}
         </>
