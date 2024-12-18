@@ -6,8 +6,10 @@ import { Select, SelectContent, SelectItem, SelectValue } from "./ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
 import { SelectTrigger } from "@radix-ui/react-select";
 import StockRow, { getInterval } from "./StockRow";
+import { useAuth } from "@/context/authProvider";
 
 const StockTable = () => {
+  const {loading: authLoading} = useAuth()
   const [duration, setDuration] = useState("1d");
   const { selectedStocks } = useStocks();
 
@@ -51,7 +53,7 @@ const StockTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {selectedStocks.length === 0 && (<TableRow ><TableCell className="h-32 text-center" colSpan={100}>No Stocks Selected!</TableCell></TableRow>)}
+            {selectedStocks.length === 0 && (<TableRow ><TableCell className="h-32 text-center" colSpan={100}>{authLoading ? "Authenticating" : "No Stocks Selected!"}</TableCell></TableRow>)}
             {selectedStocks.map((stock) => (
               <StockRow
                 key={stock.symbol}
