@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 export default async function Home() {
   return (
     <div className="p-2 sm:p-10 h-full flex flex-col justify-between">
-      <div>
+      <div className="mb-[20px]">
         <div className="flex justify-between items-center pb-5 mb-5 border-b">
           <div className="flex items-center">
             <h1 className="scroll-m-20 text-3xl font-semibold tracking-tight transition-colors first:mt-0">
@@ -20,7 +20,7 @@ export default async function Home() {
         </div>
         <div className="flex-grow">
             <SearchBar />
-          </div>
+        </div>
         <StocksTable />
       </div>
     </div>
