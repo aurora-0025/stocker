@@ -48,6 +48,8 @@ const StockRow = ({ stock, duration }: StockRowProps) => {
   const [loading, setLoading] = useState(false);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
+  const [currentProfitAgainstAvg, setCurrentProfitAgainstAvg] =
+    useState<number>(0);
   const [profitLossPercentages, setProfitLossPercentages] = useState<
     { date: string; profitLoss: string; closePrice: number }[]
   >([]);
@@ -124,16 +126,24 @@ const StockRow = ({ stock, duration }: StockRowProps) => {
 
   useEffect(() => {
     fetchHistoricalQuotes();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [duration]);
 
   useEffect(() => {
     const fetchCurrentPrice = async () => {
       try {
-        const response = await fetch(`/api/quoteSummary?symbol=${stock.symbol}`);
+        const response = await fetch(
+          `/api/quoteSummary?symbol=${stock.symbol}`
+        );
         const data = await response.json();
         const price = data.price.regularMarketPrice;
         setCurrentPrice(price);
+        if (avgCost == 0) {
+          setCurrentProfitAgainstAvg(0);
+        } else {
+          const profit = ((avgCost - price) / price) * 100;
+          setCurrentProfitAgainstAvg(profit);
+        }
       } catch (error) {
         console.error("Failed to fetch current price:", error);
       }
@@ -142,7 +152,19 @@ const StockRow = ({ stock, duration }: StockRowProps) => {
     fetchCurrentPrice();
     const interval = setInterval(fetchCurrentPrice, 30000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stock.symbol]);
+
+  useEffect(() => {
+    if (avgCost == 0) {
+      setCurrentProfitAgainstAvg(0);
+    } else {
+      const profit =
+        ((avgCost - (currentPrice ?? 0)) / (currentPrice ?? 0)) * 100;
+      setCurrentProfitAgainstAvg(profit);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avgCost]);
 
   useEffect(() => {
     if (!currentPrice || quotes.length === 0) return;
@@ -159,7 +181,7 @@ const StockRow = ({ stock, duration }: StockRowProps) => {
     setProfitLossPercentages(updatedPercentages);
   }, [currentPrice, quotes]);
 
-  const   handleUpdateStock = () => {
+  const handleUpdateStock = () => {
     updateStock(stock.symbol, quantity, avgCost);
   };
 
@@ -173,10 +195,18 @@ const StockRow = ({ stock, duration }: StockRowProps) => {
         <>
           <TableCell>
             <div className="flex">
-              <Button variant={"ghost"} size={"icon"} onClick={() => fetchHistoricalQuotes()}>
+              <Button
+                variant={"ghost"}
+                size={"icon"}
+                onClick={() => fetchHistoricalQuotes()}
+              >
                 <RefreshCw className="w-2 h-2" />
               </Button>
-              <Button variant={"ghost"} size={"icon"} onClick={() => removeStock(stock.symbol)}>
+              <Button
+                variant={"ghost"}
+                size={"icon"}
+                onClick={() => removeStock(stock.symbol)}
+              >
                 <Trash className="w-2 h-2" />
               </Button>
               <DropdownMenu>
@@ -186,29 +216,29 @@ const StockRow = ({ stock, duration }: StockRowProps) => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                    <div className="flex flex-col space-y-4 p-2 rounded-md">
-                      <label>
-                        Quantity:
-                        <input
-                          type="number"
-                          className="border rounded-md p-1 w-full"
-                          value={quantity}
-                          onChange={(e) => setQuantity(Number(e.target.value))}
-                        />
-                      </label>
-                      <label>
-                        Avg Cost:
-                        <input
-                          type="number"
-                          className="border rounded-md p-1 w-full"
-                          value={avgCost}
-                          onChange={(e) => setAvgCost(Number(e.target.value))}
-                        />
-                      </label>
-                      <Button onClick={handleUpdateStock} size="sm">
-                        Save
-                      </Button>
-                    </div>
+                  <div className="flex flex-col space-y-4 p-2 rounded-md">
+                    <label>
+                      Quantity:
+                      <input
+                        type="number"
+                        className="border rounded-md p-1 w-full"
+                        value={quantity}
+                        onChange={(e) => setQuantity(Number(e.target.value))}
+                      />
+                    </label>
+                    <label>
+                      Avg Cost:
+                      <input
+                        type="number"
+                        className="border rounded-md p-1 w-full"
+                        value={avgCost}
+                        onChange={(e) => setAvgCost(Number(e.target.value))}
+                      />
+                    </label>
+                    <Button onClick={handleUpdateStock} size="sm">
+                      Save
+                    </Button>
+                  </div>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -221,7 +251,22 @@ const StockRow = ({ stock, duration }: StockRowProps) => {
           </TableCell>
           <TableCell>
             {currentPrice !== null ? (
-              "₹" + currentPrice.toFixed(2)
+              <p className="flex flex-col gap-2">
+                
+                <span className="font-bold">{"₹" + currentPrice.toFixed(2)}</span>
+
+                {currentProfitAgainstAvg != 0 && (
+                  <span
+                    className={
+                      Number(currentProfitAgainstAvg) >= 0
+                        ? "text-green-600"
+                        : "text-red-600"
+                    }
+                  >
+                    ({currentProfitAgainstAvg.toFixed(2)}%)
+                  </span>
+                )}
+              </p>
             ) : (
               <Loader className="animate-spin" />
             )}
