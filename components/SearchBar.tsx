@@ -59,14 +59,16 @@ export default function SearchBar() {
           const parsedData = XLSX.utils.sheet_to_json(sheet) as {
             ISIN: string;
             Quantity: number;
+            "Average Cost Price": number;
           }[];
           setParsingInput(true);
 
           for (const row of parsedData) {
             const stockID = row["ISIN"];
             const quantity = row["Quantity"];
+            const avgCost = row["Average Cost Price"]
 
-            if (!stockID || !quantity) continue;
+            if (!stockID || !quantity || !avgCost) continue;
 
             try {
               const response = await fetch(`/api/search?query=${stockID}`);
@@ -75,7 +77,7 @@ export default function SearchBar() {
 
               if (data?.length > 0) {
                 const stock = data[0];
-                addStock(stock.symbol, quantity, 0);
+                addStock(stock.symbol, quantity, avgCost);
               }
             } catch (error) {
               console.error(`Failed to fetch stock for ${stockID}:`, error);
