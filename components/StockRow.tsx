@@ -2,12 +2,19 @@
 
 import React, { useEffect, useState } from "react";
 import { TableCell, TableRow } from "./ui/table";
-import StockDate from "./StockDate";
-import { Loader, RefreshCw } from "lucide-react"; // Import the refresh icon
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { Button } from "./ui/button";
 import { StockChart } from "./StockChart";
+import { Loader, RefreshCw, MoreHorizontal, Trash } from "lucide-react"; // Import the icons
+import StockDate from "./StockDate";
+import { StockData, useStocks } from "@/context/selectedStocks";
 
 type StockRowProps = {
-  symbol: string;
+  stock: StockData;
   duration: string;
 };
 
@@ -36,13 +43,16 @@ export const getInterval = (duration: string) => {
   }
 };
 
-const StockRow = ({ symbol, duration }: StockRowProps) => {
+const StockRow = ({ stock, duration }: StockRowProps) => {
+  const { removeStock, updateStock } = useStocks();
   const [loading, setLoading] = useState(false);
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [currentPrice, setCurrentPrice] = useState<number | null>(null);
   const [profitLossPercentages, setProfitLossPercentages] = useState<
     { date: string; profitLoss: string; closePrice: number }[]
   >([]);
+  const [quantity, setQuantity] = useState<number>(stock.quantity);
+  const [avgCost, setAvgCost] = useState<number>(stock.avgCost);
 
   const calculatePeriod1 = (duration: string) => {
     const now = new Date();
@@ -62,7 +72,6 @@ const StockRow = ({ symbol, duration }: StockRowProps) => {
         break;
       case "3mo":
         now.setMonth(now.getMonth() - 3);
-        console.log("3mo");
         now.setDate(1);
         break;
       case "1y":
@@ -93,14 +102,12 @@ const StockRow = ({ symbol, duration }: StockRowProps) => {
       const p2 = new Date();
       const p1 = calculatePeriod1(duration);
       p1.setHours(0, 0, 0, 0);
-      console.log(p1);
+
       const response = await fetch(
-        `/api/chart?symbol=${symbol}&period1=${p1}&period2=${p2}&interval=${interval}`
+        `/api/chart?symbol=${stock.symbol}&period1=${p1}&period2=${p2}&interval=${interval}`
       );
 
       const data = await response.json();
-      console.log(data);
-
       const formattedQuotes = data.quotes.map(
         (q: { date: Date; close: number }) => ({
           date: q.date,
@@ -117,13 +124,13 @@ const StockRow = ({ symbol, duration }: StockRowProps) => {
 
   useEffect(() => {
     fetchHistoricalQuotes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [duration]);
 
   useEffect(() => {
     const fetchCurrentPrice = async () => {
       try {
-        const response = await fetch(`/api/quoteSummary?symbol=${symbol}`);
+        const response = await fetch(`/api/quoteSummary?symbol=${stock.symbol}`);
         const data = await response.json();
         const price = data.price.regularMarketPrice;
         setCurrentPrice(price);
@@ -135,7 +142,7 @@ const StockRow = ({ symbol, duration }: StockRowProps) => {
     fetchCurrentPrice();
     const interval = setInterval(fetchCurrentPrice, 30000);
     return () => clearInterval(interval);
-  }, [symbol]);
+  }, [stock.symbol]);
 
   useEffect(() => {
     if (!currentPrice || quotes.length === 0) return;
@@ -152,6 +159,10 @@ const StockRow = ({ symbol, duration }: StockRowProps) => {
     setProfitLossPercentages(updatedPercentages);
   }, [currentPrice, quotes]);
 
+  const   handleUpdateStock = () => {
+    updateStock(stock.symbol, quantity, avgCost);
+  };
+
   return (
     <TableRow className="h-[80px]">
       {loading ? (
@@ -161,15 +172,50 @@ const StockRow = ({ symbol, duration }: StockRowProps) => {
       ) : (
         <>
           <TableCell>
-            <button
-              onClick={fetchHistoricalQuotes}
-              title="Refresh Data"
-              className="hover:text-blue-500 transition"
-            >
-              <RefreshCw className="w-5 h-5" />
-            </button>
+            <div className="flex">
+              <Button variant={"ghost"} size={"icon"} onClick={() => fetchHistoricalQuotes()}>
+                <RefreshCw className="w-2 h-2" />
+              </Button>
+              <Button variant={"ghost"} size={"icon"} onClick={() => removeStock(stock.symbol)}>
+                <Trash className="w-2 h-2" />
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant={"ghost"} size={"icon"}>
+                    <MoreHorizontal className="w-2 h-2" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                    <div className="flex flex-col space-y-4 p-2 rounded-md">
+                      <label>
+                        Quantity:
+                        <input
+                          type="number"
+                          className="border rounded-md p-1 w-full"
+                          value={quantity}
+                          onChange={(e) => setQuantity(Number(e.target.value))}
+                        />
+                      </label>
+                      <label>
+                        Avg Cost:
+                        <input
+                          type="number"
+                          className="border rounded-md p-1 w-full"
+                          value={avgCost}
+                          onChange={(e) => setAvgCost(Number(e.target.value))}
+                        />
+                      </label>
+                      <Button onClick={handleUpdateStock} size="sm">
+                        Save
+                      </Button>
+                    </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </TableCell>
-          <TableCell>{symbol}</TableCell>
+          <TableCell>{stock.symbol}</TableCell>
+          <TableCell>{stock.quantity > 0 ? stock.quantity : "N/A"}</TableCell>
+          <TableCell>{stock.avgCost > 0 ? stock.avgCost : "N/A"}</TableCell>
           <TableCell>
             <StockChart loading={loading} data={profitLossPercentages} />
           </TableCell>

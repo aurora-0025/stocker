@@ -12,7 +12,7 @@ const StockTable = () => {
   const { selectedStocks } = useStocks();
 
   return (
-    <div className="p-4">
+    <div className="sm:p-2">
       <div className="flex items-center gap-4 mb-4">
         <label htmlFor="duration" className="text-sm font-medium">
           Select Duration:
@@ -41,6 +41,8 @@ const StockTable = () => {
             <TableRow className="rounded-lg">
               <TableHead>Actions</TableHead>
               <TableHead>Stock Symbol</TableHead>
+              <TableHead>Quantity</TableHead>
+              <TableHead>Avg Cost</TableHead>
               <TableHead>Price Graph</TableHead>
               <TableHead>Current Price (INR)</TableHead>
               <TableHead colSpan={100}>
@@ -49,11 +51,11 @@ const StockTable = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {selectedStocks.length === 0 && (<TableRow ><TableCell className="h-32 text-center" colSpan={5}>No Stocks Selected!</TableCell></TableRow>)}
-            {selectedStocks.map((symbol) => (
+            {selectedStocks.length === 0 && (<TableRow ><TableCell className="h-32 text-center" colSpan={100}>No Stocks Selected!</TableCell></TableRow>)}
+            {selectedStocks.map((stock) => (
               <StockRow
-                key={symbol}
-                symbol={symbol}
+                key={stock.symbol}
+                stock={stock}
                 duration={duration}
               />
             ))}
