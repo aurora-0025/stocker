@@ -1,6 +1,8 @@
-"use client"
+"use client";
 
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { useAuth } from "@/context/authProvider";
+import { getFirestore, setDoc, doc, getDoc } from "firebase/firestore";
 
 type StocksContextType = {
   selectedStocks: string[];
@@ -11,16 +13,48 @@ type StocksContextType = {
 const StocksContext = createContext<StocksContextType | undefined>(undefined);
 
 export const StocksProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [selectedStocks, setSelectedStocks] = useState<string[]>([]);
+  const db = getFirestore();
+
+  useEffect(() => {
+    if (user) {
+      const fetchStocks = async () => {
+        const stocksRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(stocksRef);
+
+        if (docSnap.exists()) {
+          setSelectedStocks(docSnap.data().stocks || []);
+        }
+      };
+      fetchStocks();
+    }
+  }, [user, db]);
+
+  const saveStocksToFirestore = async (stocks: string[]) => {
+    if (!user) return;
+    const userRef = doc(db, "users", user.uid);
+    await setDoc(userRef, { stocks }, { merge: true });
+  };
 
   const addStock = (symbol: string) => {
     if (!selectedStocks.includes(symbol)) {
-      setSelectedStocks((prev) => [...prev, symbol]);
+      const updatedStocks = [...selectedStocks, symbol];
+      setSelectedStocks(updatedStocks);
+
+      if (user) {
+        saveStocksToFirestore(updatedStocks);
+      }
     }
   };
 
   const removeStock = (symbol: string) => {
-    setSelectedStocks((prev) => prev.filter((stock) => stock !== symbol));
+    const updatedStocks = selectedStocks.filter((stock) => stock !== symbol);
+    setSelectedStocks(updatedStocks);
+
+    if (user) {
+      saveStocksToFirestore(updatedStocks);
+    }
   };
 
   return (
