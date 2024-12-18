@@ -1,5 +1,5 @@
+import AuthButton from "@/components/AuthButton";
 import SearchBar from "@/components/SearchBar";
-import StockList from "@/components/StockList";
 import StocksTable from "@/components/StocksTable";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Loader } from "lucide-react";
@@ -12,12 +12,15 @@ export default async function Home() {
         <div>
           <h1 className="mt-10 scroll-m-20 pb-2 text-3xl font-semibold tracking-tight transition-colors first:mt-0 my-5">Stocker</h1>
         </div>
-        <ThemeToggle/>
+        <div className="flex-grow">
+          <SearchBar/>
+        </div>
+        <div className="flex items-center gap-4">
+          <ThemeToggle/>
+          <AuthButton />
+        </div>
       </div>
-      <SearchBar/>
-
         <Suspense fallback={<Loader className="animate-spin" /> }>
-          <StockList />
         </Suspense>
         <StocksTable/>
     </div>

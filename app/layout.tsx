@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { StocksProvider } from "@/context/selectedStocks";
 import { ThemeProvider } from "@/context/themeProvider";
+import { AuthProvider } from "@/context/authProvider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -30,16 +31,18 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <StocksProvider>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
-            {children}
-          </ThemeProvider>
-        </StocksProvider>
+        <AuthProvider>
+          <StocksProvider>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              {children}
+            </ThemeProvider>
+          </StocksProvider>
+        </AuthProvider>
       </body>
     </html>
   );
