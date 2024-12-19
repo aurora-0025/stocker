@@ -58,8 +58,8 @@ export default function SearchBar() {
           const sheet = workbook.Sheets[sheetName];
           const parsedData = XLSX.utils.sheet_to_json(sheet) as {
             ISIN: string;
-            Quantity: number;
-            "Average Cost Price": number;
+            Quantity?: number;
+            "Average Cost Price"?: number;
           }[];
           setParsingInput(true);
 
@@ -68,7 +68,7 @@ export default function SearchBar() {
             const quantity = row["Quantity"];
             const avgCost = row["Average Cost Price"]
 
-            if (!stockID || !quantity || !avgCost) continue;
+            if (!stockID) continue;
 
             try {
               const response = await fetch(`/api/search?query=${stockID}`);
@@ -86,7 +86,7 @@ export default function SearchBar() {
           setParsingInput(false);
         } catch (error) {
           console.error(error);
-          setFileUploadError("There was an error parsing the given file");
+          setFileUploadError("There was an error parsing the given file please provide an excel file with the headers ISIN | Quantity | Average Cost Price");
           setParsingInput(false);
         }
       };
@@ -137,6 +137,7 @@ export default function SearchBar() {
           id="file-upload"
           type="file"
           accept=".xlsx"
+          multiple={false}
           disabled={parsingInput}
           onChange={handleFileUpload}
           className="hidden"

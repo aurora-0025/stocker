@@ -141,7 +141,7 @@ const StockRow = ({ stock, duration }: StockRowProps) => {
         if (avgCost == 0) {
           setCurrentProfitAgainstAvg(0);
         } else {
-          const profit = ((avgCost - price) / price) * 100;
+          const profit = ((price - avgCost) / price) * 100;
           setCurrentProfitAgainstAvg(profit);
         }
       } catch (error) {
@@ -247,13 +247,11 @@ const StockRow = ({ stock, duration }: StockRowProps) => {
           <TableCell>{stock.quantity > 0 ? stock.quantity : "N/A"}</TableCell>
           <TableCell>{stock.avgCost > 0 ? stock.avgCost : "N/A"}</TableCell>
           <TableCell>
-            <StockChart loading={loading} data={profitLossPercentages} />
-          </TableCell>
-          <TableCell>
             {currentPrice !== null ? (
               <p className="flex flex-col gap-2">
-                
-                <span className="font-bold">{"₹" + currentPrice.toFixed(2)}</span>
+                <span className="font-bold">
+                  {"₹" + currentPrice.toFixed(2)}
+                </span>
 
                 {currentProfitAgainstAvg != 0 && (
                   <span
@@ -270,6 +268,9 @@ const StockRow = ({ stock, duration }: StockRowProps) => {
             ) : (
               <Loader className="animate-spin" />
             )}
+          </TableCell>
+          <TableCell>
+            <StockChart loading={loading} data={profitLossPercentages} />
           </TableCell>
           {profitLossPercentages.map((entry) => (
             <TableCell key={entry.date}>

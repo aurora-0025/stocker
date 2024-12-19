@@ -66,8 +66,8 @@ const StockTable = () => {
               <TableHead>Stock Symbol</TableHead>
               <TableHead>Quantity</TableHead>
               <TableHead>Avg Cost</TableHead>
-              <TableHead>Price Graph</TableHead>
               <TableHead>Current Price (INR)</TableHead>
+              <TableHead>Price Graph</TableHead>
               <TableHead colSpan={100}>
                 Profit/Loss (%) Over Time ({getInterval(duration)}) interval
               </TableHead>
