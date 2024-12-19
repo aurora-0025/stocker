@@ -141,7 +141,9 @@ const StockRow = ({ stock, duration }: StockRowProps) => {
         if (avgCost == 0) {
           setCurrentProfitAgainstAvg(0);
         } else {
-          const profit = ((price - avgCost) / price) * 100;
+          const profit = (((price ?? 0) - avgCost)/ avgCost) * 100;
+          console.log(price, avgCost, profit);
+
           setCurrentProfitAgainstAvg(profit);
         }
       } catch (error) {
@@ -159,8 +161,7 @@ const StockRow = ({ stock, duration }: StockRowProps) => {
     if (avgCost == 0) {
       setCurrentProfitAgainstAvg(0);
     } else {
-      const profit =
-        ((avgCost - (currentPrice ?? 0)) / (currentPrice ?? 0)) * 100;
+      const profit = (((currentPrice ?? 0) - avgCost)/ avgCost) * 100;
       setCurrentProfitAgainstAvg(profit);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
