@@ -63,6 +63,7 @@ const StockTable = () => {
           <TableHeader>
             <TableRow className="rounded-lg">
               <TableHead>Actions</TableHead>
+              <TableHead>Sl No.</TableHead>
               <TableHead>Stock Symbol</TableHead>
               <TableHead>Quantity</TableHead>
               <TableHead>Avg Cost</TableHead>
@@ -81,8 +82,8 @@ const StockTable = () => {
                 </TableCell>
               </TableRow>
             )}
-            {selectedStocks.map((stock) => (
-              <StockRow key={stock.symbol} stock={stock} duration={duration} />
+            {selectedStocks.map((stock, i) => (
+              <StockRow key={stock.symbol} slNo={i+1} stock={stock} duration={duration} />
             ))}
           </TableBody>
         </Table>

@@ -15,6 +15,7 @@ import { StockData, useStocks } from "@/context/selectedStocks";
 
 type StockRowProps = {
   stock: StockData;
+  slNo: number;
   duration: string;
 };
 
@@ -43,7 +44,7 @@ export const getInterval = (duration: string) => {
   }
 };
 
-const StockRow = ({ stock, duration }: StockRowProps) => {
+const StockRow = ({ stock, duration, slNo }: StockRowProps) => {
   const { removeStock, updateStock } = useStocks();
   const [loading, setLoading] = useState(false);
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -244,6 +245,7 @@ const StockRow = ({ stock, duration }: StockRowProps) => {
               </DropdownMenu>
             </div>
           </TableCell>
+          <TableCell>{slNo}</TableCell>
           <TableCell>{stock.symbol}</TableCell>
           <TableCell>{stock.quantity > 0 ? stock.quantity : "N/A"}</TableCell>
           <TableCell>{stock.avgCost > 0 ? stock.avgCost : "N/A"}</TableCell>
