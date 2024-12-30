@@ -4,8 +4,9 @@ import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useStocks } from "@/context/selectedStocks";
-import { Loader, UploadCloud } from "lucide-react";
+import { AlertCircle, Loader, UploadCloud } from "lucide-react";
 import * as XLSX from "xlsx";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 type SearchResult = {
   symbol: string;
@@ -19,6 +20,7 @@ export default function SearchBar() {
   const [parsingInput, setParsingInput] = useState(false);
   const { selectedStocks, addStock, removeStock } = useStocks();
   const [isDropdownVisible, setDropdownVisible] = useState<boolean>(false);
+  const [failed, setFailed] = useState<string[]>([]);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -42,6 +44,7 @@ export default function SearchBar() {
   };
 
   const handleFileUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    setFailed([]);
     const file = event.target.files?.[0];
     if (!file) return;
     try {
@@ -60,24 +63,36 @@ export default function SearchBar() {
             ISIN: string;
             Quantity?: number;
             "Average Cost Price"?: number;
+            "Stock Name"?: string;
           }[];
           setParsingInput(true);
 
           for (const row of parsedData) {
+            const stockName = row["Stock Name"];
             const stockID = row["ISIN"];
             const quantity = row["Quantity"];
-            const avgCost = row["Average Cost Price"]
+            const avgCost = row["Average Cost Price"];
 
             if (!stockID) continue;
 
             try {
-              const response = await fetch(`/api/search?query=${stockID}`);
-              const data = (await response.json()) as SearchResult[];
-              console.log(data);
+              let response = await fetch(`/api/search?query=${stockID}`);
+              let data = (await response.json()) as SearchResult[];
+
+              if (data.length == 0 && stockName) {
+                response = await fetch(`/api/search?query=${stockName}`);
+                data = (await response.json()) as SearchResult[];
+              }
 
               if (data?.length > 0) {
                 const stock = data[0];
                 addStock(stock.symbol, quantity, avgCost);
+              } else {
+                if (data) { 
+                  setFailed((f) => [...f, data[0] ? data[0].symbol : stockID]);
+                  console.error(`FAILED TO FIND ${stockID}`);
+                }
+
               }
             } catch (error) {
               console.error(`Failed to fetch stock for ${stockID}:`, error);
@@ -86,7 +101,9 @@ export default function SearchBar() {
           setParsingInput(false);
         } catch (error) {
           console.error(error);
-          setFileUploadError("There was an error parsing the given file please provide an excel file with the headers ISIN | Quantity | Average Cost Price");
+          setFileUploadError(
+            "There was an error parsing the given file please provide an excel file with the headers ISIN | Quantity | Average Cost Price"
+          );
           setParsingInput(false);
         }
       };
@@ -105,6 +122,14 @@ export default function SearchBar() {
     return () => clearTimeout(delayDebounce);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);
+
+  useEffect(() => {
+    if (!parsingInput && failed.length > 0) {
+      setTimeout(() => {
+        setFailed([]);
+      }, 20000);
+    }
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -179,6 +204,17 @@ export default function SearchBar() {
             );
           })}
         </div>
+      )}
+            {!parsingInput && failed.length > 0 && (
+        <>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>
+              Failed To Fetch Data For {failed.join(", ")}
+            </AlertDescription>
+          </Alert>
+        </>
       )}
     </div>
   );

@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
         });
 
         const filtered = data.quotes
-        .filter((p) => "symbol" in p && p.symbol.endsWith("NS"))
+        .filter((p) => "symbol" in p)
         .map((p) => {if("symbol" in p) return {symbol: p.symbol, shortName: p.shortname}});
         return Response.json(filtered);
     } catch (error) {
